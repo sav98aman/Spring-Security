@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/masai")
 public class WelcomeController {
-		
 	
+	// This Is Not Protected Api 
 	@GetMapping("/welcome")
 	public ResponseEntity<String> welcome(){
 		
@@ -29,6 +29,6 @@ public class WelcomeController {
 	public ResponseEntity<String> admin(){
 		
 		return new ResponseEntity<String>("Welcome to Masai App for Admin",HttpStatus.ACCEPTED);
-		}
+	}
 	
 }
