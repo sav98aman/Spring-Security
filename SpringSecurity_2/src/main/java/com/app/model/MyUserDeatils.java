@@ -1,12 +1,15 @@
 package com.app.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MyUserDeatils implements UserDetails{
+	
 	
 	
 	private Employee employee;
@@ -15,7 +18,6 @@ public class MyUserDeatils implements UserDetails{
 	public MyUserDeatils() {
 		
 	}
-
 	public MyUserDeatils(Employee empDB) {
 		this.employee=empDB;
 	}
@@ -23,7 +25,11 @@ public class MyUserDeatils implements UserDetails{
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		// TODO Auto-generated method stub
-		return null;
+		Collection<GrantedAuthority> authorities=new ArrayList<>();
+		SimpleGrantedAuthority roleauthorites=new SimpleGrantedAuthority(employee.getRole());
+		authorities.add(roleauthorites);
+		return authorities;
+	
 	}
 
 	@Override

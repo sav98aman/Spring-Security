@@ -26,4 +26,5 @@ public class ProjectSecurity {
 	 public PasswordEncoder passwordEncoder() {
 	        return new BCryptPasswordEncoder();
 	 }
+	
 }

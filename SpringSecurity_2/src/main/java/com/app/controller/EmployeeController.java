@@ -14,8 +14,9 @@ import com.app.dao.EmployeeDao;
 import com.app.model.Employee;
 
 @RestController
-@RequestMapping(value = "masai/employee")
+@RequestMapping(value = "/masai/employee")
 public class EmployeeController {
+	
 	@Autowired
 	private EmployeeDao employeedao;
 	@Autowired
@@ -24,13 +25,12 @@ public class EmployeeController {
 	
 	@PostMapping(value = "/register")
 	public ResponseEntity<Employee> RegisterUser(@RequestBody Employee emp){
-		emp.setPassword(passwordencoder.encode(emp.getPassword()));
+		emp.setPassword(passwordencoder.encode(emp.getPassword()));//hashed values saved in database 
 		Employee newEmployee=employeedao.save(emp);
 		return new ResponseEntity<Employee>(newEmployee,HttpStatus.CREATED);
 	}
 	@GetMapping(value = "/admin")
 	public ResponseEntity<String> admin(){
-		
 		return new ResponseEntity<String>(" Welcome To masai App for Admin",HttpStatus.ACCEPTED);
 	}
 }
