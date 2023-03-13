@@ -25,6 +25,8 @@ public class EmployeeController {
 	
 	@PostMapping(value = "/register")
 	public ResponseEntity<Employee> RegisterUser(@RequestBody Employee emp){
+	
+
 		emp.setPassword(passwordencoder.encode(emp.getPassword()));//hashed values saved in database 
 		Employee newEmployee=employeedao.save(emp);
 		return new ResponseEntity<Employee>(newEmployee,HttpStatus.CREATED);
