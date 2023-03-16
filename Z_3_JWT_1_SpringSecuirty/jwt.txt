@@ -1,0 +1,160 @@
+step-1-- add 3 Dependency
+	<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.11.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.11.1</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.11.1</version>
+			<scope>runtime</scope>
+		</dependency>
+		
+Step-2---create normal way of any Spring boot application
+
+step-3
+	in config.jwt package--
+				1--create one Interface SecurityConstants ---- this is Contains two things
+						1----------- JWT_Key
+						2----------- JWT_HEADER
+						example::
+							public interface SecurityConstants {
+								public static final String JWT_KEY="secretamankumaramankumaramankumaramank";
+								public static final String JWT_HEADER="Authorization";								
+							}
+				2.----create a class to Genrate JWT TOKEN ---- JwtTokenGeneratorFilter
+					----	token is genrate when user is Authenticated
+						-- JWTTOKENGENERAATORFILTER Class Extents the OncePerRequestFilter
+								in OncePerRequestFilter class There are two method--
+								
+									public class JwtTokenGeneratorFilter extends OncePerRequestFilter{
+
+											@Override
+											protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+													throws ServletException, IOException {
+												
+												System.out.println("inside doFilter....");
+												Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+										        if (null != authentication) {
+										        	
+										            SecretKey key = Keys.hmacShaKeyFor(SecurityConstants.JWT_KEY.getBytes());
+										            
+										            // jwt token is created 
+										            String jwt =Jwts.builder()
+												            		.setIssuer("Aman")//set issuer name or organization /company
+												            		.setSubject("JWT Token")
+												                    .claim("username", authentication.getName())
+												                    .claim("authorities", populateAuthorities(authentication.getAuthorities()))
+												                    .setIssuedAt(new Date())
+												                    .setExpiration(new Date(new Date().getTime()+ 30000000)) // expiration time of 8 hours
+												                    .signWith(key).compact();  
+										            response.setHeader(SecurityConstants.JWT_HEADER, jwt);
+										        }
+										        filterChain.doFilter(request, response);	
+											}
+										    private String populateAuthorities(Collection<? extends GrantedAuthority> collection) {   
+										    	Set<String> authoritiesSet = new HashSet<>();  
+										        for (GrantedAuthority authority : collection) {
+										            authoritiesSet.add(authority.getAuthority());
+										        }
+										        return String.join(",", authoritiesSet);
+										    }
+												
+										//this make sure that this filter will execute only for first time when client call the api /login at first time
+											@Override
+											protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+											
+										        return !request.getServletPath().equals("/signIn");	
+											}
+						
+									}
+				
+				
+				3..---create a class to check JWT TOKEN -------JwtTokenValidatorFilter
+						public class JwtTokenValidatorFilter extends OncePerRequestFilter{
+	
+								@Override
+								protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+										
+										String jwt= request.getHeader(SecurityConstants.JWT_HEADER);//Authorization from header
+										if(jwt != null) {		
+											try {
+												//extracting the word Bearer  -- Authorization : Bearear Token
+												jwt = jwt.substring(7);
+												SecretKey key= Keys.hmacShaKeyFor(SecurityConstants.JWT_KEY.getBytes());
+								
+												Claims claims= Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwt).getBody();
+												
+												String username= String.valueOf(claims.get("username"));
+												
+												String authorities= (String)claims.get("authorities");	// , Separated all Authorities	
+												
+												List<GrantedAuthority> auths = AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
+												
+												Authentication auth = new UsernamePasswordAuthenticationToken(username, null, auths);//no need to password //successful authentication
+								
+												
+												// custom Authentication created
+												
+								//				List<GrantedAuthority> authorities=(List<GrantedAuthority>)claims.get("authorities");
+								//				Authentication auth = new UsernamePasswordAuthenticationToken(username, null, authorities); 
+												
+												
+												SecurityContextHolder.getContext().setAuthentication(auth);
+												
+											} catch (Exception e) {
+												throw new BadCredentialsException("Invalid Token received..");
+											}	
+										}
+										filterChain.doFilter(request, response);	
+									}
+									
+									
+									
+									//this time this validation filter has to be executed for all the apis except the /login api
+									
+									@Override
+									protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+										return request.getServletPath().equals("/signIn");
+									}
+							}
+	4step--
+		add AppConfig--file
+@Configuration
+public class AppConfig {
+	
+	@Bean
+	public SecurityFilterChain appSecurityfilterChain(HttpSecurity http) throws Exception {
+		http
+			.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+			.and()
+			.authorizeHttpRequests()
+			.requestMatchers(HttpMethod.POST, "/employees").permitAll()
+			.requestMatchers(HttpMethod.GET,"/welcome").permitAll()
+			.requestMatchers(HttpMethod.GET, "/employees").hasRole("ADMIN")
+			.anyRequest().authenticated().and()
+			.addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
+			.addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
+			.csrf().disable()
+			.formLogin()
+			.and()
+			.httpBasic();
+			
+		return http.build();
+		
+	}
+	
+	@Bean
+	public PasswordEncoder passwordencoder() {
+		return new BCryptPasswordEncoder();
+	}
+}
+			
+	
